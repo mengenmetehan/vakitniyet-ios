@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- ✅ QIBLA İÇİN GEREKLİ İZİNLER -->
+	
+	<!-- Konum İzni - Kıble ve Namaz Vakitleri İçin -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Kıble yönünü hesaplamak ve namaz vakitlerini göstermek için konumunuz kullanılır.</string>
+	
+	<!-- Pusula/Hareket İzni - Kıble Pusulası İçin -->
+	<key>NSMotionUsageDescription</key>
+	<string>Pusula yönünü göstermek için cihaz sensörleri kullanılır.</string>
+	
+	<!-- Arka Plan Konum İzni (Opsiyonel - Şimdilik Gerekli Değil) -->
+	<!-- 
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Namaz vakti bildirimlerini zamanında göndermek için konumunuz kullanılır.</string>
+	-->
+</dict>
+</plist>

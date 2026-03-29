@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import WidgetKit
 
 class PrayerStore: ObservableObject {
 
@@ -124,6 +125,16 @@ class PrayerStore: ObservableObject {
         updatePrayerTime(for: .isha, time: times.yatsi)
         
         print("✅ Prayer times updated from Diyanet")
+        saveToWidget(prayers)
+    }
+
+    private func saveToWidget(_ prayers: [Prayer]) {
+        guard let defaults = UserDefaults(suiteName: "group.com.metehanmengen.vakitniyet") else { return }
+        let data = prayers.map { ["name": $0.name.rawValue, "time": $0.time] }
+        if let encoded = try? JSONSerialization.data(withJSONObject: data) {
+            defaults.set(encoded, forKey: "widgetPrayerTimes")
+        }
+        WidgetCenter.shared.reloadTimelines(ofKind: "PrayerTimesWidget")
     }
     
     private func updatePrayerTime(for name: PrayerName, time: String) {

@@ -21,19 +21,33 @@ struct ContentView: View {
                 }
                 .tag(0)
 
+            // 🧭 Kıble Bulucu
+            QiblaView()
+                .tabItem {
+                    Label("Kıble", systemImage: "location.north.fill")
+                }
+                .tag(1)
+
+            // 📿 Zikirmatik
+            ZikirmatikView()
+                .tabItem {
+                    Label("Zikirmatik", systemImage: "circle.dotted")
+                }
+                .tag(2)
+
             StatsView()
                 .tabItem {
                     Label("İstatistik", systemImage: "chart.bar.fill")
                 }
-                .tag(1)
+                .tag(3)
 
             SettingsView()
                 .tabItem {
                     Label("Ayarlar", systemImage: "gearshape.fill")
                 }
-                .tag(2)
+                .tag(4)
         }
-        .tint(Color(hex: "3B6D11"))
+        .tint(Color.hex("3B6D11"))
         .environmentObject(store)
         .environmentObject(appState)
     }

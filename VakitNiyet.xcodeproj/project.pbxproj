@@ -6,11 +6,51 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FE5DB7752F7983C200A8A4B6 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE5DB7742F7983C200A8A4B6 /* WidgetKit.framework */; };
+		FE5DB7772F7983C200A8A4B6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE5DB7762F7983C200A8A4B6 /* SwiftUI.framework */; };
+		FE5DB7882F7983C300A8A4B6 /* VakitNiyetWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FE5DB7722F7983C200A8A4B6 /* VakitNiyetWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FE5DB7862F7983C300A8A4B6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FEFC87482F7719D1007B7968 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FE5DB7712F7983C200A8A4B6;
+			remoteInfo = VakitNiyetWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FE5DB78D2F7983C300A8A4B6 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FE5DB7882F7983C300A8A4B6 /* VakitNiyetWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		FE5DB7722F7983C200A8A4B6 /* VakitNiyetWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VakitNiyetWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FE5DB7742F7983C200A8A4B6 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		FE5DB7762F7983C200A8A4B6 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		FEFC87502F7719D1007B7968 /* VakitNiyet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VakitNiyet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FE5DB78C2F7983C300A8A4B6 /* Exceptions for "VakitNiyetWidgets" folder in "VakitNiyetWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FE5DB7712F7983C200A8A4B6 /* VakitNiyetWidgetsExtension */;
+		};
 		FECF32012F7824A2001A2BA3 /* Exceptions for "VakitNiyet" folder in "VakitNiyet" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -21,6 +61,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		FE5DB7782F7983C200A8A4B6 /* VakitNiyetWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FE5DB78C2F7983C300A8A4B6 /* Exceptions for "VakitNiyetWidgets" folder in "VakitNiyetWidgetsExtension" target */,
+			);
+			path = VakitNiyetWidgets;
+			sourceTree = "<group>";
+		};
 		FEFC87522F7719D1007B7968 /* VakitNiyet */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -32,6 +80,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		FE5DB76F2F7983C200A8A4B6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FE5DB7772F7983C200A8A4B6 /* SwiftUI.framework in Frameworks */,
+				FE5DB7752F7983C200A8A4B6 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FEFC874D2F7719D1007B7968 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -42,10 +99,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FE5DB7732F7983C200A8A4B6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				FE5DB7742F7983C200A8A4B6 /* WidgetKit.framework */,
+				FE5DB7762F7983C200A8A4B6 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		FEFC87472F7719D1007B7968 = {
 			isa = PBXGroup;
 			children = (
 				FEFC87522F7719D1007B7968 /* VakitNiyet */,
+				FE5DB7782F7983C200A8A4B6 /* VakitNiyetWidgets */,
+				FE5DB7732F7983C200A8A4B6 /* Frameworks */,
 				FEFC87512F7719D1007B7968 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +122,7 @@
 			isa = PBXGroup;
 			children = (
 				FEFC87502F7719D1007B7968 /* VakitNiyet.app */,
+				FE5DB7722F7983C200A8A4B6 /* VakitNiyetWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,6 +130,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		FE5DB7712F7983C200A8A4B6 /* VakitNiyetWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FE5DB7892F7983C300A8A4B6 /* Build configuration list for PBXNativeTarget "VakitNiyetWidgetsExtension" */;
+			buildPhases = (
+				FE5DB76E2F7983C200A8A4B6 /* Sources */,
+				FE5DB76F2F7983C200A8A4B6 /* Frameworks */,
+				FE5DB7702F7983C200A8A4B6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FE5DB7782F7983C200A8A4B6 /* VakitNiyetWidgets */,
+			);
+			name = VakitNiyetWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = VakitNiyetWidgetsExtension;
+			productReference = FE5DB7722F7983C200A8A4B6 /* VakitNiyetWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		FEFC874F2F7719D1007B7968 /* VakitNiyet */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FEFC875B2F7719D2007B7968 /* Build configuration list for PBXNativeTarget "VakitNiyet" */;
@@ -68,10 +159,12 @@
 				FEFC874C2F7719D1007B7968 /* Sources */,
 				FEFC874D2F7719D1007B7968 /* Frameworks */,
 				FEFC874E2F7719D1007B7968 /* Resources */,
+				FE5DB78D2F7983C300A8A4B6 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				FE5DB7872F7983C300A8A4B6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				FEFC87522F7719D1007B7968 /* VakitNiyet */,
@@ -93,6 +186,9 @@
 				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
+					FE5DB7712F7983C200A8A4B6 = {
+						CreatedOnToolsVersion = 26.4;
+					};
 					FEFC874F2F7719D1007B7968 = {
 						CreatedOnToolsVersion = 26.4;
 					};
@@ -113,11 +209,19 @@
 			projectRoot = "";
 			targets = (
 				FEFC874F2F7719D1007B7968 /* VakitNiyet */,
+				FE5DB7712F7983C200A8A4B6 /* VakitNiyetWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		FE5DB7702F7983C200A8A4B6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FEFC874E2F7719D1007B7968 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,6 +232,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		FE5DB76E2F7983C200A8A4B6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FEFC874C2F7719D1007B7968 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -137,7 +248,75 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		FE5DB7872F7983C300A8A4B6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FE5DB7712F7983C200A8A4B6 /* VakitNiyetWidgetsExtension */;
+			targetProxy = FE5DB7862F7983C300A8A4B6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		FE5DB78A2F7983C300A8A4B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WDR7TW3HGD;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VakitNiyetWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = VakitNiyetWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.metehanmengen.vakitniyet.VakitNiyet.VakitNiyetWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FE5DB78B2F7983C300A8A4B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WDR7TW3HGD;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VakitNiyetWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = VakitNiyetWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.metehanmengen.vakitniyet.VakitNiyet.VakitNiyetWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		FEFC87592F7719D2007B7968 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -332,6 +511,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		FE5DB7892F7983C300A8A4B6 /* Build configuration list for PBXNativeTarget "VakitNiyetWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE5DB78A2F7983C300A8A4B6 /* Debug */,
+				FE5DB78B2F7983C300A8A4B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FEFC874B2F7719D1007B7968 /* Build configuration list for PBXProject "VakitNiyet" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var store: PrayerStore
+    @State private var showLocationPicker = false
 
     var body: some View {
         NavigationStack {
@@ -19,6 +20,16 @@ struct HomeView: View {
                         ErrorBanner(message: error)
                             .padding(.horizontal)
                             .padding(.bottom, 12)
+                    }
+
+                    // MARK: Konum Uyarısı
+                    if store.selectedIlceId == nil && !store.isLoading {
+                        Button { showLocationPicker = true } label: {
+                            LocationBanner()
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal)
+                        .padding(.bottom, 12)
                     }
 
                     // MARK: Sonraki namaz
@@ -60,6 +71,9 @@ struct HomeView: View {
             }
             .navigationBarHidden(true)
             .background(Color(.systemBackground))
+            .sheet(isPresented: $showLocationPicker) {
+                LocationPickerView()
+            }
         }
     }
 }
@@ -81,6 +95,36 @@ struct ErrorBanner: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.orange.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+// MARK: - Location Banner
+
+struct LocationBanner: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "location.slash.fill")
+                .foregroundColor(Color(hex: "3B6D11"))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Namaz vakitleri için konum gerekli")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                Text("Ayarlar'dan ilçenizi seçin")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(10)
+        .background(Color(hex: "3B6D11").opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(hex: "3B6D11").opacity(0.25), lineWidth: 1)
+        )
     }
 }
 

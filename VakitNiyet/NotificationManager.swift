@@ -22,19 +22,13 @@ class NotificationManager: NSObject, ObservableObject {
     
     func requestPermission() async throws {
         let center = UNUserNotificationCenter.current()
+        try await center.requestAuthorization(options: [.alert, .sound, .badge])
         
-        do {
-            let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
-            isAuthorized = granted
-            
-            if granted {
-                // Register for remote notifications
-                await UIApplication.shared.registerForRemoteNotifications()
-            }
-        } catch {
-            print("❌ Notification permission error: \(error)")
-            throw error
-        }
+        // Check the new status
+        await checkAuthorizationStatus()
+        
+        // Register for remote notifications
+        await UIApplication.shared.registerForRemoteNotifications()
     }
     
     // MARK: - Check Status
