@@ -8,17 +8,38 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var store = PrayerStore()
+    @EnvironmentObject var appState: AppState
+    @State private var selectedTab = 0
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView(selection: $selectedTab) {
+
+            HomeView()
+                .tabItem {
+                    Label("Bugün", systemImage: "circle")
+                }
+                .tag(0)
+
+            StatsView()
+                .tabItem {
+                    Label("İstatistik", systemImage: "chart.bar.fill")
+                }
+                .tag(1)
+
+            SettingsView()
+                .tabItem {
+                    Label("Ayarlar", systemImage: "gearshape.fill")
+                }
+                .tag(2)
         }
-        .padding()
+        .tint(Color(hex: "3B6D11"))
+        .environmentObject(store)
+        .environmentObject(appState)
     }
 }
-
 #Preview {
     ContentView()
+        .environmentObject(AppState())
 }
+

@@ -1,0 +1,167 @@
+# Xcode
+xcuserdata/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+*.xcodeproj/project.xcworkspace/*
+!*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+!*.xcodeproj/project.xcworkspace/xcshareddata/
+*.xcscmblueprint
+*.xccheckout
+
+# Build & Derived Data
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Obj-C/Swift specific
+*.hmap
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# CocoaPods
+Pods/
+*.xcworkspace
+!default.xcworkspace
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Accio
+Dependencies/
+.accio/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+*.cer
+*.p12
+*.mobileprovision
+
+# Code Injection
+iOSInjectionProject/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Temporary files
+*.swp
+*~.nib
+*.tmp
+*.temp
+~$*
+
+# ⚠️ GİZLİ TUTULMASI GEREKENLER ⚠️
+
+# Environment dosyaları (.env)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Config dosyaları
+Config.plist
+Secrets.swift
+APIKeys.plist
+secrets.plist
+*.secret
+*.xcconfig
+
+# Certificates & Provisioning (fastlane'de de var ama tekrar)
+*.cer
+*.p12
+*.mobileprovision
+*.certSigningRequest
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+*.stackdump
+
+# Testing
+coverage/
+*.gcda
+*.gcno
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+# Tuist
+.tuist
+Derived/
+
+# XCTestPlans
+*.xctestplan
+
+# Generated files
+*.generated.swift
+**/Generated/
+
+# xcov
+xcov_report/
+
+# AppCode
+.idea/
+
