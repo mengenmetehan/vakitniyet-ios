@@ -35,19 +35,28 @@ struct ContentView: View {
                 }
                 .tag(2)
 
+            // 🕌 En Yakın Camiler
+            NavigationStack {
+                NearestMosquesView()
+            }
+            .tabItem {
+                Label("Camiler", systemImage: "building.columns.fill")
+            }
+            .tag(3)
+
             StatsView()
                 .tabItem {
                     Label("İstatistik", systemImage: "chart.bar.fill")
                 }
-                .tag(3)
+                .tag(4)
 
             SettingsView()
                 .tabItem {
                     Label("Ayarlar", systemImage: "gearshape.fill")
                 }
-                .tag(4)
+                .tag(5)
         }
-        .tint(Color.hex("3B6D11"))
+        .tint(Color(hex: "3B6D11"))
         .environmentObject(store)
         .environmentObject(appState)
     }
