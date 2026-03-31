@@ -72,7 +72,7 @@ class NearestMosquesViewModel: ObservableObject {
     @Published var error: String?
     @Published var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 41.015137, longitude: 28.979530), // İstanbul default
-        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+        span: MKCoordinateSpan(latitudeDelta: 0.009, longitudeDelta: 0.009)
     )
 
     private(set) var userLocation: CLLocationCoordinate2D?
@@ -104,9 +104,6 @@ class NearestMosquesViewModel: ObservableObject {
                 lat: location.coordinate.latitude,
                 lon: location.coordinate.longitude
             )
-            if !mosques.isEmpty {
-                fitRegionToMosques(userCoord: location.coordinate)
-            }
         } catch {
             self.error = "Camiler yüklenemedi: \(error.localizedDescription)"
         }
@@ -123,27 +120,7 @@ class NearestMosquesViewModel: ObservableObject {
     private func updateRegion(center: CLLocationCoordinate2D) {
         region = MKCoordinateRegion(
             center: center,
-            span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            span: MKCoordinateSpan(latitudeDelta: 0.009, longitudeDelta: 0.009)
         )
-    }
-
-    private func fitRegionToMosques(userCoord: CLLocationCoordinate2D) {
-        var coords = mosques.map { $0.coordinate }
-        coords.append(userCoord)
-
-        let minLat = coords.map { $0.latitude }.min()!
-        let maxLat = coords.map { $0.latitude }.max()!
-        let minLon = coords.map { $0.longitude }.min()!
-        let maxLon = coords.map { $0.longitude }.max()!
-
-        let center = CLLocationCoordinate2D(
-            latitude: (minLat + maxLat) / 2,
-            longitude: (minLon + maxLon) / 2
-        )
-        let span = MKCoordinateSpan(
-            latitudeDelta: (maxLat - minLat) * 1.4,
-            longitudeDelta: (maxLon - minLon) * 1.4
-        )
-        region = MKCoordinateRegion(center: center, span: span)
     }
 }

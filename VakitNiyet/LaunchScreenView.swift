@@ -32,15 +32,19 @@ struct LaunchScreenView: View {
                 Image(systemName: "moon.stars.fill")
                     .font(.system(size: 120))
                     .foregroundColor(.white)
-                
+                    .frame(width: 150, height: 150)
+
                 Text("Vakit Niyet")
                     .font(.system(size: 40, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
-                
+                    .multilineTextAlignment(.center)
+
                 Text("Namaz Takip Uygulaması")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
         }
     }
 }
