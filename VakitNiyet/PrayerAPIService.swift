@@ -153,18 +153,24 @@ class PrayerAPIService {
     
     /// GET /api/public/location/cities
     func getCities(ulkeId: String) async throws -> [DiyanetSehir] {
-        return try await network.request(
+        print("🌆 getCities called with ulkeId: \(ulkeId)")
+        let result: [DiyanetSehir] = try await network.request(
             path: "/public/location/cities?ulkeId=\(ulkeId)",
             requiresAuth: false
         )
+        print("🌆 getCities returned \(result.count) cities, sample: \(result.prefix(3).map { "\($0.SehirAdi)(\($0.SehirID))" })")
+        return result
     }
     
     /// GET /api/public/location/districts
     func getDistricts(ilId: String) async throws -> [DiyanetIlce] {
-        return try await network.request(
+        print("🏙️ getDistricts called with ilId: \(ilId)")
+        let result: [DiyanetIlce] = try await network.request(
             path: "/public/location/districts?ilId=\(ilId)",
             requiresAuth: false
         )
+        print("🏙️ getDistricts returned \(result.count) districts, first: \(result.first?.IlceAdi ?? "-")")
+        return result
     }
     
     // MARK: - Subscription

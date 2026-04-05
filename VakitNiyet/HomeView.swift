@@ -3,6 +3,10 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var store: PrayerStore
     @State private var showLocationPicker = false
+    @State private var isDetectingLocation = false
+    @State private var locationError: String?
+    @State private var showLocationError = false
+    @State private var showLocationRequiredAlert = false
 
     var body: some View {
         NavigationStack {
@@ -14,7 +18,7 @@ struct HomeView: View {
                         .padding(.horizontal)
                         .padding(.top, 8)
                         .padding(.bottom, 16)
-                    
+
                     // MARK: Error Message
                     if let error = store.errorMessage {
                         ErrorBanner(message: error)
@@ -24,10 +28,15 @@ struct HomeView: View {
 
                     // MARK: Konum Uyarısı
                     if store.selectedIlceId == nil && !store.isLoading {
-                        Button { showLocationPicker = true } label: {
-                            LocationBanner()
-                        }
-                        .buttonStyle(.plain)
+                        LocationBanner(
+                            isDetecting: isDetectingLocation,
+                            onGPS: {
+                                Task { await autoDetectLocation() }
+                            },
+                            onManual: {
+                                showLocationPicker = true
+                            }
+                        )
                         .padding(.horizontal)
                         .padding(.bottom, 12)
                     }
@@ -49,7 +58,14 @@ struct HomeView: View {
                         VStack(spacing: 8) {
                             ForEach(store.prayers) { prayer in
                                 PrayerRow(prayer: prayer)
-                                    .onTapGesture { store.toggle(prayer) }
+                                    .onTapGesture {
+                                        guard store.selectedIlceId != nil else {
+                                            showLocationRequiredAlert = true
+                                            return
+                                        }
+                                        store.toggle(prayer)
+                                    }
+                                    .opacity(store.selectedIlceId == nil ? 0.45 : 1.0)
                             }
                         }
                         .padding(.horizontal)
@@ -74,6 +90,30 @@ struct HomeView: View {
             .sheet(isPresented: $showLocationPicker) {
                 LocationPickerView()
             }
+            .alert("Konum Bulunamadı", isPresented: $showLocationError) {
+                Button("Manuel Seç") { showLocationPicker = true }
+                Button("Tamam", role: .cancel) {}
+            } message: {
+                Text(locationError ?? "")
+            }
+            .alert("Konum Gerekli", isPresented: $showLocationRequiredAlert) {
+                Button("Konum Seç") { showLocationPicker = true }
+                Button("Tamam", role: .cancel) {}
+            } message: {
+                Text("Namaz işaretleyebilmek için önce konum seçmelisiniz.")
+            }
+        }
+    }
+
+    private func autoDetectLocation() async {
+        isDetectingLocation = true
+        defer { isDetectingLocation = false }
+        do {
+            let district = try await LocationAutoDetectService().detect()
+            store.saveSelectedLocation(district.IlceID)
+        } catch {
+            locationError = error.localizedDescription
+            showLocationError = true
         }
     }
 }
@@ -101,24 +141,63 @@ struct ErrorBanner: View {
 // MARK: - Location Banner
 
 struct LocationBanner: View {
+    let isDetecting: Bool
+    let onGPS: () -> Void
+    let onManual: () -> Void
+
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "location.slash.fill")
-                .foregroundColor(Color(hex: "3B6D11"))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Namaz vakitleri için konum gerekli")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                Text("Ayarlar'dan ilçenizi seçin")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "location.slash.fill")
+                    .foregroundColor(Color(hex: "3B6D11"))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Namaz vakitleri için konum gerekli")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                    Text("GPS ile otomatik seçin veya manuel girin")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
             }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
+
+            HStack(spacing: 8) {
+                Button(action: onGPS) {
+                    HStack(spacing: 5) {
+                        if isDetecting {
+                            ProgressView()
+                                .scaleEffect(0.75)
+                                .tint(Color(hex: "3B6D11"))
+                        } else {
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 11))
+                        }
+                        Text(isDetecting ? "Algılanıyor..." : "GPS ile Seç")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(Color(hex: "3B6D11"))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color(hex: "3B6D11").opacity(0.12))
+                    .clipShape(Capsule())
+                }
+                .disabled(isDetecting)
+
+                Button(action: onManual) {
+                    Text("Manuel Seç")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(.systemGray6))
+                        .clipShape(Capsule())
+                }
+                .disabled(isDetecting)
+            }
         }
-        .padding(10)
+        .padding(12)
         .background(Color(hex: "3B6D11").opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
@@ -282,17 +361,70 @@ struct PrayerRow: View {
 
 // MARK: - Month Calendar
 
+private struct SelectedDate: Identifiable {
+    let id = UUID()
+    let date: Date
+}
+
 struct MonthCalendarView: View {
     @EnvironmentObject var store: PrayerStore
+    @State private var displayedMonth: Date = {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.year, .month], from: Date())
+        return cal.date(from: comps) ?? Date()
+    }()
+    @State private var records: [MonthDayRecord] = []
+    @State private var isLoading = false
+    @State private var selectedDate: SelectedDate?
+
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
     private let dayLabels = ["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pa"]
+    private let cal = Calendar.current
+
+    private var isCurrentMonth: Bool {
+        let now = Date()
+        return cal.component(.year, from: displayedMonth) == cal.component(.year, from: now)
+            && cal.component(.month, from: displayedMonth) == cal.component(.month, from: now)
+    }
+
+    private var monthYearString: String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "tr_TR")
+        f.dateFormat = "MMMM yyyy"
+        return f.string(from: displayedMonth).capitalized
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Header with navigation
             HStack {
-                Text(store.monthYearString)
-                    .font(.system(size: 14, weight: .medium))
+                Button {
+                    navigate(by: -1)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(hex: "3B6D11"))
+                }
+
                 Spacer()
+
+                if isLoading {
+                    ProgressView().scaleEffect(0.7)
+                } else {
+                    Text(monthYearString)
+                        .font(.system(size: 14, weight: .medium))
+                }
+
+                Spacer()
+
+                Button {
+                    navigate(by: 1)
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(isCurrentMonth ? Color(.systemGray4) : Color(hex: "3B6D11"))
+                }
+                .disabled(isCurrentMonth)
             }
 
             // Gün başlıkları
@@ -307,22 +439,51 @@ struct MonthCalendarView: View {
 
             // Günler grid
             LazyVGrid(columns: columns, spacing: 4) {
-                // Ayın ilk günü Pazartesi'den başlatmak için offset
                 let offset = monthStartOffset()
                 ForEach(0..<offset, id: \.self) { _ in
                     Color.clear.frame(height: 38)
                 }
-                ForEach(store.monthRecords) { record in
-                    DayCell(record: record)
+                ForEach(records) { record in
+                    DayCell(record: record, onTap: { date in
+                        selectedDate = SelectedDate(date: date)
+                    })
                 }
+            }
+        }
+        .task {
+            await loadRecords()
+        }
+        .onChange(of: store.monthRecords) { _, newRecords in
+            if isCurrentMonth {
+                records = newRecords
+            }
+        }
+        .sheet(item: $selectedDate) { wrapper in
+            DayDetailView(date: wrapper.date) {
+                Task { await loadRecords() }
             }
         }
     }
 
+    private func navigate(by months: Int) {
+        guard let newDate = cal.date(byAdding: .month, value: months, to: displayedMonth) else { return }
+        // İleri: sadece şimdiki aya kadar
+        if months > 0 && newDate > Date() { return }
+        displayedMonth = newDate
+        Task { await loadRecords() }
+    }
+
+    private func loadRecords() async {
+        isLoading = true
+        let y = cal.component(.year, from: displayedMonth)
+        let m = cal.component(.month, from: displayedMonth)
+        await store.loadMonthRecords(year: y, month: m)
+        records = store.monthRecords
+        isLoading = false
+    }
+
     private func monthStartOffset() -> Int {
-        let cal = Calendar.current
-        guard let first = store.monthRecords.first else { return 0 }
-        // weekday: 1=Sun, 2=Mon... → convert to Mon=0
+        guard let first = records.first else { return 0 }
         let wd = cal.component(.weekday, from: first.date)
         return (wd + 5) % 7
     }
@@ -330,11 +491,14 @@ struct MonthCalendarView: View {
 
 struct DayCell: View {
     let record: MonthDayRecord
+    var onTap: ((Date) -> Void)? = nil
 
-    private var isToday: Bool {
-        Calendar.current.isDateInToday(record.date)
+    private var isToday: Bool { Calendar.current.isDateInToday(record.date) }
+    private var isFuture: Bool {
+        let cal = Calendar.current
+        return !cal.isDateInToday(record.date) && record.date > Date()
     }
-    private var isFuture: Bool { record.prayersDone < 0 }
+    private var isPast: Bool { !isToday && !isFuture }
     private var dayNumber: String {
         String(Calendar.current.component(.day, from: record.date))
     }
@@ -346,7 +510,6 @@ struct DayCell: View {
                 .foregroundStyle(isFuture ? .tertiary : .primary)
 
             if !isFuture {
-                // 5 nokta
                 HStack(spacing: 2) {
                     ForEach(0..<5, id: \.self) { i in
                         Circle()
@@ -364,6 +527,163 @@ struct DayCell: View {
             RoundedRectangle(cornerRadius: 6)
                 .stroke(isToday ? Color(hex: "3B6D11") : Color.clear, lineWidth: 1)
         )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard isPast else { return }
+            onTap?(record.date)
+        }
+    }
+}
+
+// MARK: - Day Detail View
+
+struct DayDetailView: View {
+    let date: Date
+    let onDismiss: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var prayers: [Prayer] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
+    private let api = PrayerAPIService.shared
+
+    private var titleString: String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "tr_TR")
+        f.dateFormat = "d MMMM EEEE"
+        return f.string(from: date)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error = errorMessage {
+                    VStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(prayers) { prayer in
+                            Button {
+                                toggle(prayer)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(prayer.isDone
+                                                  ? Color(hex: "EAF3DE")
+                                                  : Color(.secondarySystemBackground))
+                                            .frame(width: 36, height: 36)
+                                        Image(systemName: prayer.name.icon)
+                                            .font(.system(size: 15))
+                                            .foregroundColor(prayer.isDone
+                                                             ? Color(hex: "3B6D11")
+                                                             : prayer.name.iconColor)
+                                    }
+                                    Text(prayer.name.rawValue)
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    ZStack {
+                                        Circle()
+                                            .stroke(prayer.isDone ? Color(hex: "3B6D11") : Color(.systemGray4), lineWidth: 1.5)
+                                            .frame(width: 24, height: 24)
+                                        if prayer.isDone {
+                                            Circle()
+                                                .fill(Color(hex: "3B6D11"))
+                                                .frame(width: 24, height: 24)
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
+                                    .animation(.easeInOut(duration: 0.15), value: prayer.isDone)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                }
+            }
+            .navigationTitle(titleString)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Tamam") {
+                        onDismiss()
+                        dismiss()
+                    }
+                }
+            }
+            .task {
+                await load()
+            }
+        }
+    }
+
+    private func load() async {
+        isLoading = true
+        do {
+            let response = try await api.getDay(date: date)
+            prayers = response.prayers.map { log in
+                Prayer(
+                    id: log.prayerName,
+                    name: mapName(log.prayerName),
+                    time: "",
+                    isDone: log.isDone
+                )
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    private func toggle(_ prayer: Prayer) {
+        guard let idx = prayers.firstIndex(where: { $0.id == prayer.id }) else { return }
+        prayers[idx].isDone.toggle()
+        Task {
+            do {
+                let result = try await api.togglePrayer(name: mapNameToAPI(prayer.name), date: date)
+                prayers[idx].isDone = result.isDone
+            } catch {
+                prayers[idx].isDone.toggle()
+            }
+        }
+    }
+
+    private func mapName(_ raw: String) -> PrayerName {
+        switch raw.lowercased() {
+        case "sabah", "fajr", "imsak": return .fajr
+        case "öğle", "ogle", "dhuhr": return .dhuhr
+        case "ikindi", "asr":         return .asr
+        case "akşam", "aksam", "maghrib": return .maghrib
+        case "yatsı", "yatsi", "isha":    return .isha
+        default: return .fajr
+        }
+    }
+
+    private func mapNameToAPI(_ name: PrayerName) -> String {
+        switch name {
+        case .fajr:    return "FAJR"
+        case .dhuhr:   return "DHUHR"
+        case .asr:     return "ASR"
+        case .maghrib: return "MAGHRIB"
+        case .isha:    return "ISHA"
+        }
     }
 }
 

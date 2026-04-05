@@ -30,7 +30,7 @@ enum AppConfig {
         print("⚠️ .env dosyasında BASE_URL bulunamadı! Fallback kullanılıyor: \(fallbackURL)")
         return fallbackURL
         #else
-        let fallbackURL = "https://api.vakitniyet.com/v1/api"
+        let fallbackURL = "https://vakif-niyet-backend-production.up.railway.app/v1/api"
         print("⚠️ .env dosyasında BASE_URL bulunamadı! Fallback kullanılıyor: \(fallbackURL)")
         return fallbackURL
         #endif

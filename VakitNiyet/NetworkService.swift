@@ -10,9 +10,10 @@ actor NetworkService {
     private var refreshToken: String?
     
     private let baseURL = AppConfig.baseURL
-    
+
     private init() {
-        loadTokens()
+        self.accessToken = UserDefaults.standard.string(forKey: "accessToken")
+        self.refreshToken = UserDefaults.standard.string(forKey: "refreshToken")
     }
     
     // MARK: - Token Management
@@ -33,11 +34,6 @@ actor NetworkService {
         refreshToken = nil
         UserDefaults.standard.removeObject(forKey: "accessToken")
         UserDefaults.standard.removeObject(forKey: "refreshToken")
-    }
-    
-    private func loadTokens() {
-        accessToken = UserDefaults.standard.string(forKey: "accessToken")
-        refreshToken = UserDefaults.standard.string(forKey: "refreshToken")
     }
     
     // MARK: - Generic Request
@@ -140,12 +136,24 @@ struct PrayerLogResponse: Codable {
 }
 
 struct MonthResponse: Codable {
+    let year: Int?
+    let month: Int?
     let days: [DaySummary]
+    let prevYear: Int?
+    let prevMonth: Int?
+    let nextYear: Int?
+    let nextMonth: Int?
 }
 
 struct DaySummary: Codable {
     let date: String
     let doneCount: Int
+    let prayers: [DonePrayer]?
+}
+
+struct DonePrayer: Codable {
+    let prayerName: String
+    let prayedAt: String?
 }
 
 struct StreakResponse: Codable {
@@ -189,7 +197,7 @@ struct AuthResponse: Codable {
     let subscription: SubscriptionInfo
 }
 
-struct TokenResponse: Codable {
+struct TokenResponse: Codable, Sendable {
     let accessToken: String
     let refreshToken: String
 }
@@ -244,7 +252,7 @@ struct AppleSignInRequest: Codable {
     let deviceToken: String?
 }
 
-struct RefreshTokenRequest: Codable {
+struct RefreshTokenRequest: Codable, Sendable {
     let refreshToken: String
 }
 

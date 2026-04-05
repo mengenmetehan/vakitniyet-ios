@@ -1,57 +1,5 @@
 import SwiftUI
-import CoreLocation
 
-// MARK: - One-time Location Fetcher
-
-private class OneTimeLocationFetcher: NSObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
-    private var continuation: CheckedContinuation<CLLocation, Error>?
-
-    func getLocation() async throws -> CLLocation {
-        return try await withCheckedThrowingContinuation { cont in
-            self.continuation = cont
-            manager.delegate = self
-            manager.desiredAccuracy = kCLLocationAccuracyKilometer
-            let status = manager.authorizationStatus
-            if status == .notDetermined {
-                manager.requestWhenInUseAuthorization()
-            } else if status == .authorizedWhenInUse || status == .authorizedAlways {
-                manager.requestLocation()
-            } else {
-                cont.resume(throwing: LocationError.denied)
-                self.continuation = nil
-            }
-        }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let loc = locations.first else { return }
-        continuation?.resume(returning: loc)
-        continuation = nil
-    }
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        continuation?.resume(throwing: error)
-        continuation = nil
-    }
-
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        switch manager.authorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways:
-            manager.requestLocation()
-        case .denied, .restricted:
-            continuation?.resume(throwing: LocationError.denied)
-            continuation = nil
-        default:
-            break
-        }
-    }
-
-    enum LocationError: LocalizedError {
-        case denied
-        var errorDescription: String? { "Konum izni verilmedi. Ayarlar'dan izin verin." }
-    }
-}
 
 // MARK: - Location Picker View
 
@@ -71,7 +19,6 @@ struct LocationPickerView: View {
     @State private var isLoading = false
     @State private var isDetectingLocation = false
     @State private var errorMessage: String?
-    @State private var locationFetcher: OneTimeLocationFetcher?
 
     private let api = PrayerAPIService.shared
     private let trLocale = Locale(identifier: "tr_TR")
@@ -184,11 +131,11 @@ struct LocationPickerView: View {
             .task {
                 await loadCountries()
             }
-            .onChange(of: selectedCountry) { country in
+            .onChange(of: selectedCountry) { _, country in
                 guard let country else { return }
                 Task { await loadCities(ulkeId: country.UlkeID) }
             }
-            .onChange(of: selectedCity) { city in
+            .onChange(of: selectedCity) { _, city in
                 guard let city else { return }
                 Task { await loadDistricts(ilId: city.SehirID) }
             }
@@ -205,7 +152,7 @@ struct LocationPickerView: View {
             countries = try await api.getCountries()
             
             // Türkiye'yi otomatik seç
-            if let turkey = countries.first(where: { $0.UlkeAdi.contains("Türkiye") || $0.UlkeAdi.contains("Turkey") }) {
+            if let turkey = countries.first(where: { $0.UlkeAdi.uppercased().contains("TÜRK") || $0.UlkeAdi.uppercased().contains("TURK") }) {
                 selectedCountry = turkey
             }
         } catch {
@@ -259,65 +206,12 @@ struct LocationPickerView: View {
         errorMessage = nil
         defer { isDetectingLocation = false }
 
-        // Ensure Turkey is loaded
-        if countries.isEmpty {
-            await loadCountries()
-        }
-        guard let turkey = selectedCountry else {
-            errorMessage = "Ülke listesi yüklenemedi."
-            return
-        }
-        if cities.isEmpty {
-            await loadCities(ulkeId: turkey.UlkeID)
-        }
-
-        // Get device location
-        let fetcher = OneTimeLocationFetcher()
-        locationFetcher = fetcher
-        defer { locationFetcher = nil }
-
-        let location: CLLocation
         do {
-            location = try await fetcher.getLocation()
+            let district = try await LocationAutoDetectService().detect()
+            store.saveSelectedLocation(district.IlceID)
+            dismiss()
         } catch {
             errorMessage = error.localizedDescription
-            return
-        }
-
-        // Reverse geocode
-        let geocoder = CLGeocoder()
-        guard let placemark = try? await geocoder.reverseGeocodeLocation(location).first else {
-            errorMessage = "Konum bilgisi alınamadı."
-            return
-        }
-
-        let rawCity = placemark.administrativeArea ?? ""
-
-        // Match city (case-insensitive, Turkish locale)
-        guard let matchedCity = cities.first(where: { city in
-            let a = city.SehirAdi.lowercased(with: trLocale)
-            let b = rawCity.lowercased(with: trLocale)
-            return a == b || a.contains(b) || b.contains(a)
-        }) else {
-            errorMessage = "'\(rawCity)' şehri Diyanet listesinde bulunamadı. Manuel seçin."
-            return
-        }
-
-        selectedCity = matchedCity
-        await loadDistricts(ilId: matchedCity.SehirID)
-
-        // Try subLocality first, then locality as district name
-        let rawDistrict = placemark.subLocality ?? placemark.locality ?? ""
-
-        if let matchedDistrict = districts.first(where: { ilce in
-            let a = ilce.IlceAdi.lowercased(with: trLocale)
-            let b = rawDistrict.lowercased(with: trLocale)
-            return a == b || a.contains(b) || b.contains(a)
-        }) {
-            selectedDistrict = matchedDistrict
-        } else {
-            // City matched but district not found — show list for manual selection
-            errorMessage = "Şehir bulundu ama ilçe eşleştirilemedi. Listeden seçin."
         }
     }
 }

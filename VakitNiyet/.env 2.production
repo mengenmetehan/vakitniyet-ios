@@ -1,0 +1,5 @@
+# VakitNiyet Production Environment
+# Bu dosya release/production modda kullanılır
+
+# Backend API Base URL (Production)
+BASE_URL=https://vakif-niyet-backend-production.up.railway.app/v1/api

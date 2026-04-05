@@ -12,6 +12,16 @@ enum PrayerName: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    var apiName: String {
+        switch self {
+        case .fajr:    return "FAJR"
+        case .dhuhr:   return "DHUHR"
+        case .asr:     return "ASR"
+        case .maghrib: return "MAGHRIB"
+        case .isha:    return "ISHA"
+        }
+    }
+
     var icon: String {
         switch self {
         case .fajr:    return "moon.stars.fill"
@@ -50,7 +60,7 @@ struct Prayer: Identifiable {
 
 // MARK: - DayRecord (UI Model)
 
-struct MonthDayRecord: Identifiable {
+struct MonthDayRecord: Identifiable, Equatable {
     let id = UUID()
     let date: Date
     var prayersDone: Int  // 0–5 or -1 for future
@@ -60,6 +70,17 @@ struct MonthDayRecord: Identifiable {
         self.date = date
         self.prayersDone = prayersDone
     }
+}
+
+// MARK: - DateFormatter helpers
+
+extension DateFormatter {
+    static let yyyyMMdd: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
 }
 
 // MARK: - Color hex helper

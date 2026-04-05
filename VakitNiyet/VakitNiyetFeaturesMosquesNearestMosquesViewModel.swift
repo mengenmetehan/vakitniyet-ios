@@ -16,11 +16,15 @@ private class MosqueLocationFetcher: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<CLLocation, Error>?
 
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    }
+
     func getLocation() async throws -> CLLocation {
         try await withCheckedThrowingContinuation { cont in
             self.continuation = cont
-            manager.delegate = self
-            manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
             switch manager.authorizationStatus {
             case .notDetermined:
                 manager.requestWhenInUseAuthorization()

@@ -6,8 +6,11 @@ struct SettingsView: View {
     @ObservedObject private var notificationManager = NotificationManager.shared
 
     private let offsets = [0, 5, 10, 15, 20, 30]
-    
+
     @State private var showLocationPicker = false
+    @State private var showLocationRequiredAlert = false
+
+    private var hasLocation: Bool { store.selectedIlceId != nil }
 
     var body: some View {
         NavigationStack {
@@ -62,51 +65,62 @@ struct SettingsView: View {
                 Section {
                     if !notificationManager.isAuthorized {
                         Button {
-                            Task {
-                                try? await notificationManager.requestPermission()
+                            if !hasLocation {
+                                showLocationRequiredAlert = true
+                                return
                             }
+                            Task { try? await notificationManager.requestPermission() }
                         } label: {
                             HStack {
                                 Label {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Bildirimleri Aç")
                                             .font(.system(size: 15))
-                                        Text("Namaz vakti hatırlatmaları")
+                                            .foregroundColor(hasLocation ? .primary : .secondary)
+                                        Text(hasLocation ? "Namaz vakti hatırlatmaları" : "Önce konum seçmelisiniz")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                 } icon: {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 7)
-                                            .fill(Color.orange.opacity(0.2))
+                                            .fill(Color.orange.opacity(hasLocation ? 0.2 : 0.1))
                                             .frame(width: 28, height: 28)
                                         Image(systemName: "bell.badge.fill")
                                             .font(.system(size: 13))
-                                            .foregroundColor(.orange)
+                                            .foregroundColor(hasLocation ? .orange : .secondary)
                                     }
                                 }
-                                
                                 Spacer()
-                                
-                                Image(systemName: "arrow.right")
+                                Image(systemName: hasLocation ? "arrow.right" : "lock.fill")
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundStyle(.tertiary)
                             }
                         }
                     } else {
-                        Toggle(isOn: $store.notificationsEnabled) {
+                        Toggle(isOn: Binding(
+                            get: { store.notificationsEnabled },
+                            set: { newValue in
+                                if newValue && !hasLocation {
+                                    showLocationRequiredAlert = true
+                                    return
+                                }
+                                store.notificationsEnabled = newValue
+                                Task { await store.updateNotificationSettings() }
+                            }
+                        )) {
                             Label {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Namaz bildirimleri")
                                         .font(.system(size: 15))
-                                    Text("Tüm vakitler için aktif")
+                                    Text(hasLocation ? "Tüm vakitler için aktif" : "Önce konum seçmelisiniz")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
                             } icon: {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 7)
-                                        .fill(Color(hex: "3B6D11"))
+                                        .fill(hasLocation ? Color(hex: "3B6D11") : Color(.systemGray4))
                                         .frame(width: 28, height: 28)
                                     Image(systemName: "bell.fill")
                                         .font(.system(size: 13))
@@ -115,11 +129,7 @@ struct SettingsView: View {
                             }
                         }
                         .tint(Color(hex: "3B6D11"))
-                        .onChange(of: store.notificationsEnabled) { _, _ in
-                            Task {
-                                await store.updateNotificationSettings()
-                            }
-                        }
+                        .disabled(!hasLocation && !store.notificationsEnabled)
                     }
                 } header: {
                     Text("Genel")
@@ -247,7 +257,11 @@ struct SettingsView: View {
                     Section {
                         Button {
                             Task {
-                                try? await notificationManager.scheduleTestNotification()
+                                do {
+                                    try await notificationManager.scheduleTestNotification()
+                                } catch {
+                                    print("❌ Test notification error: \(error)")
+                                }
                             }
                         } label: {
                             HStack {
@@ -318,6 +332,12 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showLocationPicker) {
                 LocationPickerView()
+            }
+            .alert("Konum Gerekli", isPresented: $showLocationRequiredAlert) {
+                Button("Konum Seç") { showLocationPicker = true }
+                Button("Tamam", role: .cancel) {}
+            } message: {
+                Text("Namaz vakti bildirimleri alabilmek için önce konum seçmelisiniz.")
             }
         }
     }

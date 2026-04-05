@@ -7,6 +7,10 @@
 
 import Foundation
 
+// Bundle.main is @MainActor in Swift 6, so we use Bundle(for:) to avoid propagating
+// the @MainActor isolation to AppConfig.baseURL and callers like NetworkService.
+private final class _EnvLoaderAnchor {}
+
 /// .env dosyasından environment variable'ları yükler
 enum EnvironmentLoader {
     
@@ -60,20 +64,22 @@ enum EnvironmentLoader {
     
     /// .env dosyasını bul (önce proje root, sonra bundle)
     private static func findEnvFile(filename: String) -> String? {
+        let bundle = Bundle(for: _EnvLoaderAnchor.self)
+
         // 1. Bundle içinde ara (Xcode'da Add Files yapıldıysa)
-        if let bundlePath = Bundle.main.path(forResource: filename.replacingOccurrences(of: ".env", with: ""), ofType: "env") {
+        if let bundlePath = bundle.path(forResource: filename.replacingOccurrences(of: ".env", with: ""), ofType: "env") {
             return bundlePath
         }
-        
+
         // 2. Bundle içinde direkt .env dosyası ara
-        if let bundlePath = Bundle.main.path(forResource: filename, ofType: nil) {
+        if let bundlePath = bundle.path(forResource: filename, ofType: nil) {
             return bundlePath
         }
-        
+
         // 3. Proje root dizininde ara (development için)
         #if DEBUG
         let fileManager = FileManager.default
-        if let projectPath = Bundle.main.resourcePath?.replacingOccurrences(of: "Build/Products/Debug-iphonesimulator/VakitNiyet.app", with: "") {
+        if let projectPath = bundle.resourcePath?.replacingOccurrences(of: "Build/Products/Debug-iphonesimulator/VakitNiyet.app", with: "") {
             let envPath = projectPath + filename
             if fileManager.fileExists(atPath: envPath) {
                 return envPath

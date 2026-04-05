@@ -3,11 +3,12 @@ import Combine
 import UserNotifications
 import UIKit
 
+
 @MainActor
 class NotificationManager: NSObject, ObservableObject {
-    
+
     static let shared = NotificationManager()
-    
+
     @Published var isAuthorized = false
     @Published var deviceToken: String?
     
@@ -25,10 +26,10 @@ class NotificationManager: NSObject, ObservableObject {
         try await center.requestAuthorization(options: [.alert, .sound, .badge])
         
         // Check the new status
-        await checkAuthorizationStatus()
-        
+        checkAuthorizationStatus()
+
         // Register for remote notifications
-        await UIApplication.shared.registerForRemoteNotifications()
+        UIApplication.shared.registerForRemoteNotifications()
     }
     
     // MARK: - Check Status
@@ -59,161 +60,131 @@ class NotificationManager: NSObject, ObservableObject {
         print("❌ Failed to register for remote notifications: \(error)")
     }
     
-    // MARK: - Local Notification Scheduling (Test için)
-    
+    // MARK: - Test Notification
+
     func scheduleTestNotification(type: String = "KARMA") async throws {
-        // Önce bildirim iznini kontrol et
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
-        
-        print("🔔 Notification Authorization Status: \(settings.authorizationStatus.rawValue)")
-        print("   - Authorized: \(settings.authorizationStatus == .authorized)")
-        print("   - Alert Setting: \(settings.alertSetting.rawValue)")
-        print("   - Sound Setting: \(settings.soundSetting.rawValue)")
-        print("   - Badge Setting: \(settings.badgeSetting.rawValue)")
-        
-        // İzin verilmemişse veya belirtilmemişse, izin iste
+
         if settings.authorizationStatus == .notDetermined {
-            print("⚠️ Permission not determined, requesting...")
             try await requestPermission()
-            // İzin istendikten sonra tekrar kontrol et
             let newSettings = await center.notificationSettings()
             guard newSettings.authorizationStatus == .authorized else {
-                print("❌ User denied notification permission")
                 throw NotificationError.permissionDenied
             }
         } else if settings.authorizationStatus != .authorized {
-            print("❌ Notification permission denied!")
-            print("💡 Please enable notifications in Settings > VakitNiyet > Notifications")
             throw NotificationError.permissionDenied
         }
-        
-        print("✅ Notification permission is granted, proceeding...")
-        
-        // Backend'den test notification gönder
+
         guard let url = URL(string: "\(AppConfig.baseURL)/notification/test-send?type=\(type)") else {
             throw URLError(.badURL)
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("*/*", forHTTPHeaderField: "accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        // Auth token ekle (UserDefaults'tan al)
+        request.setValue("1", forHTTPHeaderField: "ngrok-skip-browser-warning")
+
         if let token = UserDefaults.standard.string(forKey: "accessToken") {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            print("🔑 Using auth token for test notification")
+            print("🔑 Test notification token: YES")
+        } else {
+            print("🔑 Test notification token: NO (not logged in?)")
         }
-        
+
         let (data, response) = try await URLSession.shared.data(for: request)
-        
-        // Backend'den gelen raw data'yı logla
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("📥 Backend Response Data: \(responseString)")
-        }
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            if let raw = String(data: data, encoding: .utf8) { print("❌ Test notification failed: \(raw)") }
             throw URLError(.badServerResponse)
         }
-        
-        print("📊 HTTP Status Code: \(httpResponse.statusCode)")
-        
-        guard httpResponse.statusCode == 200 else {
-            print("❌ Test notification request failed with status: \(httpResponse.statusCode)")
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("Response: \(responseString)")
-            }
-            throw URLError(.badServerResponse)
+
+        // Backend içeriği hesaplar, push'u biz göndeririz
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw URLError(.cannotParseResponse)
         }
-        
-        // Response'u parse et
-        let decoder = JSONDecoder()
-        let notificationResponse = try decoder.decode(TestNotificationResponse.self, from: data)
-        
-        print("📦 Parsed Response:")
-        print("   - Title: \(notificationResponse.title ?? "nil")")
-        print("   - Body: \(notificationResponse.body ?? "nil")")
-        print("   - Metin: \(notificationResponse.metin ?? "nil")")
-        print("   - Kaynak: \(notificationResponse.kaynak ?? "nil")")
-        print("   - Success: \(notificationResponse.success ?? false)")
-        print("   - Message: \(notificationResponse.message ?? "nil")")
-        print("   - Data: \(notificationResponse.data ?? [:])")
-        
-        // Local notification olarak schedule et
+
+        let title = json["title"] as? String ?? json["kaynak"] as? String ?? "VakitNiyet"
+        let body  = json["body"]  as? String ?? json["metin"]  as? String ?? ""
+
+        // Namaz bildirimi formatı varsa uygula, yoksa backend body'yi kullan
+        let finalBody = NotificationManager.formatPrayerBody(userInfo: json) ?? body
+
         let content = UNMutableNotificationContent()
-        content.title = notificationResponse.notificationTitle
-        content.body = notificationResponse.notificationBody
+        content.title = title
+        content.body  = finalBody
         content.sound = .default
-        
-        // App icon'unu badge olarak göster
         content.badge = 1
-        
-        // Bildirime resim ekle (opsiyonel - istemiyorsanız yorum satırı yapın)
-        // if let imageUrl = addNotificationAttachment(to: content) {
-        //     print("🖼️ Notification image attached")
-        // }
-        
-        print("🔔 Creating notification content:")
-        print("   - Title: '\(content.title)'")
-        print("   - Body: '\(content.body)'")
-        print("   - Sound: \(content.sound != nil ? "Yes" : "No")")
-        print("   - Badge: \(content.badge ?? 0)")
-        
-        // Backend'den gelen ekstra verileri userInfo'ya ekle
-        if let additionalData = notificationResponse.data {
-            content.userInfo = additionalData
+        content.userInfo = json
+
+        if let attachment = appIconAttachment() {
+            content.attachments = [attachment]
         }
-        
+
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false)
-        let notificationRequest = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: trigger
+        try await center.add(
+            UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
         )
-        
-        try await UNUserNotificationCenter.current().add(notificationRequest)
-        print("✅ Test notification scheduled from backend - Type: \(type)")
-        print("📬 Title: \(content.title)")
-        print("📬 Body: \(content.body)")
+        print("✅ Test notification scheduled — title: \(title)")
     }
     
+    // MARK: - App Icon Attachment
+
+    private func appIconAttachment() -> UNNotificationAttachment? {
+        guard
+            let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+            let primary = icons["CFBundlePrimaryIcon"] as? [String: Any],
+            let files = primary["CFBundleIconFiles"] as? [String],
+            let iconName = files.last
+        else { return nil }
+
+        // Asset catalog'dan derlenen PNG'leri bundle'da ara (@3x, @2x, plain)
+        let candidates = ["\(iconName)@3x", "\(iconName)@2x", iconName]
+        guard let iconURL = candidates.lazy
+            .compactMap({ Bundle.main.url(forResource: $0, withExtension: "png") })
+            .first
+        else { return nil }
+
+        return try? UNNotificationAttachment(identifier: "appIcon", url: iconURL, options: nil)
+    }
+
+    // MARK: - Prayer Notification Body Formatting
+
+    static func formatPrayerBody(userInfo: [AnyHashable: Any]) -> String? {
+        // Backend'den gelen namaz adı: "prayerName" veya "prayer_name"
+        let rawName = userInfo["prayerName"] as? String
+            ?? userInfo["prayer_name"] as? String
+
+        guard let rawName else { return nil }
+
+        let displayName: String
+        switch rawName.uppercased() {
+        case "FAJR",    "SABAH", "IMSAK": displayName = "Sabah"
+        case "DHUHR",   "OGLE",  "ÖĞLE":  displayName = "Öğle"
+        case "ASR",     "IKINDI","İKİNDİ":displayName = "İkindi"
+        case "MAGHRIB", "AKSAM", "AKŞAM": displayName = "Akşam"
+        case "ISHA",    "YATSI", "YATSI": displayName = "Yatsı"
+        default: displayName = rawName.capitalized
+        }
+
+        // Offset: önce payload'dan bak, sonra UserDefaults'taki kullanıcı ayarı
+        let offset: Int
+        if let payloadOffset = userInfo["offsetMinutes"] as? Int ?? (userInfo["offsetMinutes"] as? String).flatMap(Int.init) {
+            offset = payloadOffset
+        } else {
+            offset = UserDefaults.standard.integer(forKey: "notificationOffset").nonZero ?? 10
+        }
+
+        return "\(displayName) namazına \(offset) dk kaldı"
+    }
+
     // MARK: - Handle Notification Response
-    
+
     func handleNotificationResponse(_ response: UNNotificationResponse) {
         let userInfo = response.notification.request.content.userInfo
         print("📬 Notification tapped: \(userInfo)")
-        
-        // Notification'dan gelen verilere göre aksiyon al
-        // Örn: belirli bir namaz sayfasına yönlendir
     }
     
-    // MARK: - Notification Attachment Helper
-    
-    private func addNotificationAttachment(to content: UNMutableNotificationContent) -> URL? {
-        // Asset catalog'dan bir resim kullan
-        // Assets.xcassets'e "NotificationImage" adında bir resim ekleyin
-        
-        guard let image = UIImage(named: "NotificationImage") ?? UIImage(named: "AppIcon"),
-              let imageData = image.pngData() else {
-            print("⚠️ Notification image not found")
-            return nil
-        }
-        
-        // Geçici dizine kaydet
-        let tempDirectory = FileManager.default.temporaryDirectory
-        let tempFileURL = tempDirectory.appendingPathComponent(UUID().uuidString + ".png")
-        
-        do {
-            try imageData.write(to: tempFileURL)
-            let attachment = try UNNotificationAttachment(identifier: "image", url: tempFileURL, options: nil)
-            content.attachments = [attachment]
-            return tempFileURL
-        } catch {
-            print("❌ Error creating notification attachment: \(error)")
-            return nil
-        }
-    }
 }
 
 // MARK: - Notification Error
@@ -241,7 +212,7 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        return [.banner, .sound, .badge]
+        return [.banner, .list, .sound, .badge]
     }
     
     // Notification'a tıklandığında
@@ -252,107 +223,9 @@ extension NotificationManager: UNUserNotificationCenterDelegate {
         handleNotificationResponse(response)
     }
 }
-// MARK: - Response Models
+// MARK: - Int Helper
 
-struct TestNotificationResponse: Codable {
-    let title: String?
-    let body: String?
-    let metin: String?      // Backend'den gelen "metin" field'ı
-    let kaynak: String?     // Backend'den gelen "kaynak" field'ı
-    let data: [String: Any]?
-    let success: Bool?
-    let message: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case title, body, metin, kaynak, data, success, message
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        title = try container.decodeIfPresent(String.self, forKey: .title)
-        body = try container.decodeIfPresent(String.self, forKey: .body)
-        metin = try container.decodeIfPresent(String.self, forKey: .metin)
-        kaynak = try container.decodeIfPresent(String.self, forKey: .kaynak)
-        success = try container.decodeIfPresent(Bool.self, forKey: .success)
-        message = try container.decodeIfPresent(String.self, forKey: .message)
-        
-        // data dictionary'yi decode et
-        if let dataDict = try container.decodeIfPresent([String: AnyCodable].self, forKey: .data) {
-            data = dataDict.mapValues { $0.value }
-        } else {
-            data = nil
-        }
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encodeIfPresent(title, forKey: .title)
-        try container.encodeIfPresent(body, forKey: .body)
-        try container.encodeIfPresent(metin, forKey: .metin)
-        try container.encodeIfPresent(kaynak, forKey: .kaynak)
-        try container.encodeIfPresent(success, forKey: .success)
-        try container.encodeIfPresent(message, forKey: .message)
-        
-        // data'yı encode et
-        if let data = data {
-            let encodableDict = data.mapValues { AnyCodable($0) }
-            try container.encodeIfPresent(encodableDict, forKey: .data)
-        }
-    }
-    
-    // Helper computed properties
-    var notificationTitle: String {
-        return title ?? kaynak ?? "Ayet Bildirimi"
-    }
-    
-    var notificationBody: String {
-        return body ?? metin ?? "Bildirim içeriği"
-    }
-}
-
-// Helper struct for decoding Any type
-struct AnyCodable: Codable {
-    let value: Any
-    
-    init(_ value: Any) {
-        self.value = value
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        
-        if let string = try? container.decode(String.self) {
-            value = string
-        } else if let int = try? container.decode(Int.self) {
-            value = int
-        } else if let double = try? container.decode(Double.self) {
-            value = double
-        } else if let bool = try? container.decode(Bool.self) {
-            value = bool
-        } else if let array = try? container.decode([AnyCodable].self) {
-            value = array.map { $0.value }
-        } else if let dict = try? container.decode([String: AnyCodable].self) {
-            value = dict.mapValues { $0.value }
-        } else {
-            value = NSNull()
-        }
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        
-        switch value {
-        case let string as String:
-            try container.encode(string)
-        case let int as Int:
-            try container.encode(int)
-        case let double as Double:
-            try container.encode(double)
-        case let bool as Bool:
-            try container.encode(bool)
-        default:
-            try container.encodeNil()
-        }
-    }
+private extension Int {
+    var nonZero: Int? { self == 0 ? nil : self }
 }
 

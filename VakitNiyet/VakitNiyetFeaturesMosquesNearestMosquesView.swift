@@ -11,6 +11,7 @@ import MapKit
 struct NearestMosquesView: View {
 
     @StateObject private var viewModel = NearestMosquesViewModel()
+    @State private var cameraPosition: MapCameraPosition = .automatic
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,20 +36,22 @@ struct NearestMosquesView: View {
         }
         .navigationTitle("En Yakın Camiler")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            cameraPosition = .region(viewModel.region)
+        }
     }
 
     // MARK: - Map
 
     private var mapSection: some View {
-        Map(
-            coordinateRegion: $viewModel.region,
-            showsUserLocation: true,
-            annotationItems: viewModel.mosques
-        ) { mosque in
-            MapAnnotation(coordinate: mosque.coordinate) {
-                MosquePinView(name: mosque.name)
+        Map(position: $cameraPosition) {
+            ForEach(viewModel.mosques) { mosque in
+                Annotation("", coordinate: mosque.coordinate) {
+                    MosquePinView(name: mosque.name)
+                }
             }
+            UserAnnotation()
         }
         .ignoresSafeArea(edges: .top)
     }
@@ -96,7 +99,7 @@ struct NearestMosquesView: View {
                 .tint(Color(hex: "3B6D11"))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
+    }   
 
     // MARK: - Empty State
 

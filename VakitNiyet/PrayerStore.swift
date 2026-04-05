@@ -12,7 +12,7 @@ class PrayerStore: ObservableObject {
     @Published var streak: Int = 0
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
-    @Published var notificationsEnabled: Bool = true
+    @Published var notificationsEnabled: Bool = false
     @Published var notificationOffset: Int = 10        // dakika
     @Published var notificationContent: String = "karma" // "hadis" | "ayet" | "karma"
     @Published var enabledPrayers: [PrayerName: Bool] = Dictionary(
@@ -89,9 +89,12 @@ class PrayerStore: ObservableObject {
             streak = streakData.currentStreak
             print("🔥 Streak: \(streak)")
             
+            // Bildirim ayarlarını API'den çek
+            await syncNotificationSettings()
+
             // Month records
             await loadMonthRecords()
-            
+
         } catch {
             errorMessage = error.localizedDescription
             print("❌ Load error: \(error)")
@@ -151,16 +154,14 @@ class PrayerStore: ObservableObject {
     // MARK: - Load Month Records
 
     @MainActor
-    func loadMonthRecords() async {
+    func loadMonthRecords(year: Int? = nil, month: Int? = nil) async {
         let cal = Calendar.current
         let today = Date()
-        let comps = cal.dateComponents([.year, .month], from: today)
-        
-        guard let year = comps.year, let month = comps.month else { return }
-        
+        let y = year ?? cal.component(.year, from: today)
+        let m = month ?? cal.component(.month, from: today)
+
         do {
-            let response = try await api.getMonth(year: year, month: month)
-            
+            let response = try await api.getMonth(year: y, month: m)
             monthRecords = response.days.compactMap { day -> MonthDayRecord? in
                 guard let date = dateFmt.date(from: day.date) else { return nil }
                 return MonthDayRecord(date: date, prayersDone: day.doneCount)
@@ -253,9 +254,11 @@ class PrayerStore: ObservableObject {
     func syncNotificationSettings() async {
         do {
             let settings = try await api.getNotificationSettings()
-            notificationsEnabled = settings.enabled
+            notificationsEnabled = settings.enabled && settings.ilceId != nil
             notificationOffset = settings.offsetMinutes
             notificationContent = settings.contentType
+            UserDefaults(suiteName: "group.com.metehanmengen.vakitniyet")?
+                .set(settings.offsetMinutes, forKey: "notificationOffset")
             selectedIlceId = settings.ilceId
             
             enabledPrayers[.fajr] = settings.fajrEnabled
