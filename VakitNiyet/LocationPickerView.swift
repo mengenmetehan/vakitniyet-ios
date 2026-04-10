@@ -211,7 +211,7 @@ struct LocationPickerView: View {
             store.saveSelectedLocation(district.IlceID)
             dismiss()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = "Konum otomatik algılanamadı. Lütfen manuel olarak Ülke, Şehir ve İlçe seçerek konum bilgisini giriniz."
         }
     }
 }

@@ -94,7 +94,7 @@ struct HomeView: View {
                 Button("Manuel Seç") { showLocationPicker = true }
                 Button("Tamam", role: .cancel) {}
             } message: {
-                Text(locationError ?? "")
+                Text("Lütfen manuel olarak Ülke, Şehir ve İlçe seçerek konum bilgisini giriniz.")
             }
             .alert("Konum Gerekli", isPresented: $showLocationRequiredAlert) {
                 Button("Konum Seç") { showLocationPicker = true }

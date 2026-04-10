@@ -98,8 +98,6 @@ class PrayerStore: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
             print("❌ Load error: \(error)")
-            // Fallback to mock data if needed during development
-            loadMockData()
         }
         
         isLoading = false
@@ -259,7 +257,11 @@ class PrayerStore: ObservableObject {
             notificationContent = settings.contentType
             UserDefaults(suiteName: "group.com.metehanmengen.vakitniyet")?
                 .set(settings.offsetMinutes, forKey: "notificationOffset")
-            selectedIlceId = settings.ilceId
+            // Yerel konum yoksa (uygulama silindi/yeni cihaz) backend'den geri yükle
+            if selectedIlceId == nil, let backendIlceId = settings.ilceId {
+                selectedIlceId = backendIlceId
+                UserDefaults.standard.set(backendIlceId, forKey: "selectedIlceId")
+            }
             
             enabledPrayers[.fajr] = settings.fajrEnabled
             enabledPrayers[.dhuhr] = settings.dhuhrEnabled
@@ -400,37 +402,4 @@ class PrayerStore: ObservableObject {
         return "00:00"
     }
     
-    // MARK: - Mock Fallback (development)
-    
-    private func loadMockData() {
-        prayers = [
-            Prayer(id: "1", name: .fajr,    time: "06:12", isDone: false),
-            Prayer(id: "2", name: .dhuhr,   time: "13:15", isDone: false),
-            Prayer(id: "3", name: .asr,     time: "15:42", isDone: false),
-            Prayer(id: "4", name: .maghrib, time: "18:52", isDone: false),
-            Prayer(id: "5", name: .isha,    time: "20:18", isDone: false),
-        ]
-        
-        let cal = Calendar.current
-        let today = Date()
-        guard let range = cal.range(of: .day, in: .month, for: today),
-              let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: today))
-        else { return }
-
-        monthRecords = range.compactMap { day -> MonthDayRecord? in
-            guard let date = cal.date(byAdding: .day, value: day - 1, to: monthStart) else { return nil }
-            let isPast = date <= today
-            let count: Int
-            if cal.isDateInToday(date) {
-                count = prayers.filter { $0.isDone }.count
-            } else if isPast {
-                count = [5, 5, 4, 5, 3, 5, 5, 2, 4, 5][day % 10]
-            } else {
-                count = 0
-            }
-            return MonthDayRecord(date: date, prayersDone: isPast ? count : -1)
-        }
-        
-        streak = 0
-    }
 }

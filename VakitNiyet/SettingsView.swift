@@ -237,7 +237,7 @@ struct SettingsView: View {
                             selected: $store.notificationContent
                         )
                         ContentOptionRow(
-                            title: "Karışık",
+                            title: "Ayet ve Hadis",
                             subtitle: "Her bildirimde rastgele",
                             value: "karma",
                             selected: $store.notificationContent
@@ -246,66 +246,11 @@ struct SettingsView: View {
                         Text("Bildirim içeriği")
                     }
 
-                    // MARK: Önizleme
-                    Section {
-                        NotificationPreviewCard()
-                    } header: {
-                        Text("Önizleme")
-                    }
-                    
-                    // MARK: Test Bildirimi
-                    Section {
-                        Button {
-                            Task {
-                                do {
-                                    try await notificationManager.scheduleTestNotification()
-                                } catch {
-                                    print("❌ Test notification error: \(error)")
-                                }
-                            }
-                        } label: {
-                            HStack {
-                                Label {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Test Bildirimi Gönder")
-                                            .font(.system(size: 15))
-                                            .foregroundColor(.primary)
-                                        Text("5 saniye sonra bildirim gelecek")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                } icon: {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 7)
-                                            .fill(Color.purple.opacity(0.2))
-                                            .frame(width: 28, height: 28)
-                                        Image(systemName: "bell.badge.fill")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.purple)
-                                    }
-                                }
-                                
-                                Spacer()
-                                
-                                Image(systemName: "paperplane.fill")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                    } header: {
-                        Text("Geliştirici")
-                    } footer: {
-                        if let token = notificationManager.deviceToken {
-                            Text("Device Token: \(token.prefix(20))...")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
                 }
 
                 // MARK: Uygulama
                 Section {
-                    LabeledContent("Sürüm", value: "1.0.0")
+                    LabeledContent("Sürüm", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-")
                     Link(destination: URL(string: "https://vakitniyet.app/gizlilik")!) {
                         Text("Gizlilik Politikası")
                     }
@@ -388,79 +333,4 @@ struct ContentOptionRow: View {
     }
 }
 
-// MARK: - Notification Preview Card
-
-struct NotificationPreviewCard: View {
-    @EnvironmentObject var store: PrayerStore
-
-    private var offsetLabel: String {
-        store.notificationOffset == 0
-            ? "tam vaktinde"
-            : "\(store.notificationOffset) dakika kaldı"
-    }
-
-    private var sampleText: String {
-        switch store.notificationContent {
-        case "ayet":
-            return "\"Şüphesiz namaz, müminler üzerine vakitleri belirlenmiş bir farz olarak yazılmıştır.\""
-        default:
-            return "\"Amellerin en hayırlısı, az da olsa devamlı olanıdır.\""
-        }
-    }
-
-    private var sampleSource: String {
-        store.notificationContent == "ayet" ? "— Nisa, 103" : "— Buhari, 6465"
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(hex: "27500A"))
-                        .frame(width: 24, height: 24)
-                    Text("V")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                Text("Vakit Niyet")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(timeString)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-            }
-
-            Text("İkindi namazına \(offsetLabel)")
-                .font(.system(size: 14, weight: .semibold))
-
-            Text(sampleText)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .lineSpacing(3)
-
-            Text(sampleSource)
-                .font(.system(size: 11))
-                .foregroundStyle(.tertiary)
-                .italic()
-        }
-        .padding(14)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-
-    private var timeString: String {
-        let h = 15
-        let m = 42 - store.notificationOffset
-        let adjustedH = m < 0 ? h - 1 : h
-        let adjustedM = m < 0 ? 60 + m : m
-        return String(format: "%d:%02d", adjustedH, adjustedM)
-    }
-}
-#Preview {
-    SettingsView()
-        .environmentObject(PrayerStore())
-        .environmentObject(AppState())
-}
 
