@@ -56,14 +56,17 @@ class PrayerStore: ObservableObject {
         print("📋 Loading initial data...")
         
         do {
+            // Önce bildirim ayarlarını çek (ilceId buradan gelebilir)
+            await syncNotificationSettings()
+
             // Paralel olarak bugünün namazları ve streak bilgisini al
             async let todayResponse = api.getToday()
             async let streakResponse = api.getStreak()
-            
+
             let (today, streakData) = try await (todayResponse, streakResponse)
-            
+
             print("✅ Today response: \(today.prayers.count) prayers")
-            
+
             // Today's prayers
             prayers = today.prayers.map { prayerLog in
                 Prayer(
@@ -73,24 +76,18 @@ class PrayerStore: ObservableObject {
                     isDone: prayerLog.isDone
                 )
             }
-            
-            print("📍 Prayer times before Diyanet: \(prayers.map { "\($0.name.rawValue): \($0.time)" })")
-            
-            // Eğer prayer times endpoint'i varsa, zamanları oradan al
+
+            // Eğer ilceId varsa Diyanet'ten vakitleri al
             if let ilceId = selectedIlceId {
                 print("🌍 Fetching prayer times for ilceId: \(ilceId)")
                 try await loadPrayerTimes(ilceId: ilceId)
-                print("📍 Prayer times after Diyanet: \(prayers.map { "\($0.name.rawValue): \($0.time)" })")
             } else {
                 print("⚠️ No ilceId selected - using backend times only")
             }
-            
+
             // Streak
             streak = streakData.currentStreak
             print("🔥 Streak: \(streak)")
-            
-            // Bildirim ayarlarını API'den çek
-            await syncNotificationSettings()
 
             // Month records
             await loadMonthRecords()
